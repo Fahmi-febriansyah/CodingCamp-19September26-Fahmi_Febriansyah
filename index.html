@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense &amp; Budget Visualizer</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Chart.js CDN (Allowed by project specifications) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- HEADER & THEME TOGGLE -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="header-spacer"></div>
+      <h1 class="app-title">Expense &amp; Budget Visualizer</h1>
+      <button id="themeToggle" class="btn-theme-toggle" aria-label="Toggle dark/light mode" title="Toggle dark/light mode">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- TOTAL BALANCE (Page 4 Layout Alignment) -->
+    <section class="card balance-card">
+      <p class="balance-label">TOTAL BALANCE</p>
+      <h2 id="totalBalance" class="balance-amount">$0.00</h2>
+    </section>
+
+    <!-- SPENDING LIMIT ALERT BANNER (Optional Challenge: Limit alert) -->
+    <div id="limitAlert" class="alert-banner hidden" role="alert">
+      <span class="alert-icon">⚠️</span>
+      <div class="alert-text">
+        <strong>Spending Limit Exceeded!</strong>
+        <span>Total spending has surpassed your budget limit of <strong id="alertLimitValue">$0.00</strong>.</span>
+      </div>
+    </div>
+
+    <!-- BUDGET & SPENDING LIMIT WIDGET (Optional Challenge) -->
+    <section class="card budget-card">
+      <div class="budget-header">
+        <div>
+          <h3 class="section-title">Budget &amp; Spending Limit</h3>
+          <p class="section-subtitle">Set an overall budget limit to track progress and flag high expenses.</p>
+        </div>
+        <div class="budget-input-wrapper">
+          <span class="currency-symbol">$</span>
+          <input type="number" id="spendingLimit" placeholder="Set limit (e.g. 100)" min="0" step="0.01" aria-label="Set spending limit" />
+          <button id="clearLimitBtn" class="btn-text-danger" title="Clear limit">Clear</button>
+        </div>
+      </div>
+      <div id="budgetProgressWrapper" class="budget-progress-wrapper hidden">
+        <div class="budget-progress-info">
+          <span id="budgetProgressText">Spent: $0.00 of $0.00</span>
+          <span id="budgetPercentText" class="budget-percent">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="budgetProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADD TRANSACTION FORM (MVP Requirement) -->
+    <section class="card form-card">
+      <h3 class="section-title">Add Transaction</h3>
+      <form id="transactionForm" novalidate>
+
+        <div class="form-grid">
+          <!-- Item Name -->
+          <div class="form-group">
+            <label for="itemName">Item Name <span class="required">*</span></label>
+            <input type="text" id="itemName" placeholder="e.g. Cilok" autocomplete="off" />
+            <span class="error-msg" id="nameError"></span>
+          </div>
+
+          <!-- Amount -->
+          <div class="form-group">
+            <label for="amount">Amount ($) <span class="required">*</span></label>
+            <input type="number" id="amount" placeholder="e.g. 14.94" min="0.01" step="0.01" />
+            <span class="error-msg" id="amountError"></span>
+          </div>
+
+          <!-- Category -->
+          <div class="form-group">
+            <label for="category">Category <span class="required">*</span></label>
+            <div class="select-wrapper">
+              <select id="category">
+                <option value="">-- Select Category --</option>
+                <option value="Food">Food</option>
+                <option value="Transport">Transport</option>
+                <option value="Fun">Fun</option>
+                <option value="__add_custom__">+ Add Custom Category...</option>
+              </select>
+            </div>
+            <span class="error-msg" id="categoryError"></span>
+          </div>
+
+          <!-- Date (Supports Monthly Summary) -->
+          <div class="form-group">
+            <label for="transactionDate">Date</label>
+            <input type="date" id="transactionDate" />
+            <span class="error-msg" id="dateError"></span>
+          </div>
+        </div>
+
+        <!-- Custom Category Inline Input (Optional Challenge) -->
+        <div class="custom-cat-box hidden" id="customCategoryBox">
+          <div class="custom-cat-row">
+            <input type="text" id="customCategoryInput" placeholder="Enter new category name (e.g. Health, Bills)" />
+            <button type="button" id="saveCustomCatBtn" class="btn-secondary">Save Category</button>
+            <button type="button" id="cancelCustomCatBtn" class="btn-text">Cancel</button>
+          </div>
+          <span class="error-msg" id="customCategoryError"></span>
+        </div>
+
+        <button type="submit" class="btn-primary" id="addBtn">Add Transaction</button>
+      </form>
+    </section>
+
+    <!-- TRANSACTIONS & VISUAL CHART GRID (Page 4 2-Column Section) -->
+    <div class="bottom-grid">
+
+      <!-- TRANSACTIONS COLUMN -->
+      <section class="card transaction-card">
+        <div class="card-header-row">
+          <h3 class="section-title">Transactions</h3>
+          <span id="transactionCount" class="badge-count">0 items</span>
+        </div>
+
+        <!-- SORT & FILTER CONTROLS (Optional Challenge) -->
+        <div class="list-controls">
+          <div class="control-item">
+            <label for="sortBy">Sort:</label>
+            <select id="sortBy" aria-label="Sort transactions">
+              <option value="date-desc">Newest First</option>
+              <option value="date-asc">Oldest First</option>
+              <option value="amount-desc">Amount: High → Low</option>
+              <option value="amount-asc">Amount: Low → High</option>
+              <option value="category-asc">Category: A → Z</option>
+            </select>
+          </div>
+          <div class="control-item">
+            <label for="filterCategory">Filter:</label>
+            <select id="filterCategory" aria-label="Filter transactions by category">
+              <option value="all">All Categories</option>
+              <option value="Food">Food</option>
+              <option value="Transport">Transport</option>
+              <option value="Fun">Fun</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- SCROLLABLE TRANSACTION LIST (MVP Requirement) -->
+        <div id="transactionList" class="transaction-list" tabindex="0" aria-label="List of transactions">
+          <div id="emptyMsg" class="empty-state">
+            <div class="empty-icon">📝</div>
+            <p>No transactions yet.</p>
+            <span class="empty-sub">Add a transaction using the form above.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SPENDING BY CATEGORY PIE CHART COLUMN (MVP Requirement) -->
+      <section class="card chart-card">
+        <h3 class="section-title">Spending by Category</h3>
+        <div class="chart-container">
+          <canvas id="spendingChart" aria-label="Spending distribution pie chart" role="img"></canvas>
+          <div id="chartEmpty" class="empty-state">
+            <div class="empty-icon">📊</div>
+            <p>No spending data yet.</p>
+            <span class="empty-sub">Add transactions to visualize spending distribution.</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- MONTHLY SUMMARY VIEW (Optional Challenge) -->
+    <section class="card monthly-summary-card">
+      <div class="summary-header">
+        <div>
+          <h3 class="section-title">Monthly Summary</h3>
+          <p class="section-subtitle">Overview of your spending breakdown by month.</p>
+        </div>
+        <div class="month-nav">
+          <button id="prevMonth" class="btn-nav" aria-label="Previous month" title="Previous Month">&#8249;</button>
+          <span id="currentMonthLabel" class="current-month-label">September 2026</span>
+          <button id="nextMonth" class="btn-nav" aria-label="Next month" title="Next Month">&#8250;</button>
+        </div>
+      </div>
+      <div id="monthlySummaryContent" class="summary-grid">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <p>Expense &amp; Budget Visualizer &copy; 2026 &bull; Mobile-friendly Vanilla Web App</p>
+  </footer>
+
+  <!-- Only 1 JavaScript file inside js/ (strictly adhering to Folder Rules) -->
+  <script src="js/app.js"></script>
+</body>
+</html>
